@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI Predictor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+            text-align: left;
+        }
+        input[type="text"], select {
+            width: calc(100% - 22px); /* Account for padding */
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 25px;
+            font-size: 1.2em;
+            color: #333;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            min-height: 30px; /* So it doesn't jump around when empty */
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AQI Predictor</h1>
+        
+        <label for="cityInput">Enter City Name:</label>
+        <input type="text" id="cityInput" list="citySuggestions" placeholder="e.g., New York">
+        <datalist id="citySuggestions">
+            {% if cities %}
+                {% for city in cities %}
+                    <option value="{{ city }}">
+                {% endfor %}
+            {% endif %}
+        </datalist>
+
+        <button onclick="predictAQI()">Predict AQI</button>
+
+        <div id="result">
+            <!-- Prediction will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        async function predictAQI() {
+            const cityInput = document.getElementById('cityInput');
+            const cityName = cityInput.value.trim();
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Predicting...'; // Provide feedback
+
+            if (!cityName) {
+                resultDiv.innerHTML = '<span class="error">Please enter a city name.</span>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ city: cityName }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `Predicted AQI for <strong>${data.city}</strong>: <strong>${data.predicted_aqi}</strong>`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">Error: ${data.error || 'Prediction failed'}</span>`;
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                resultDiv.innerHTML = '<span class="error">An error occurred. Check the console or server logs.</span>';
+            }
+        }
+
+        // Optional: Allow pressing Enter to predict
+        document.getElementById('cityInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent form submission if it were a form
+                predictAQI();
+            }
+        });
+    </script>
+</body>
+</html>
